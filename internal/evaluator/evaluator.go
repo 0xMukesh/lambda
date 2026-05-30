@@ -1,8 +1,6 @@
 package evaluator
 
 import (
-	"log"
-
 	"github.com/0xmukesh/lambda/internal/ast"
 )
 
@@ -16,6 +14,7 @@ func shift(node ast.Node, cutoff, amount int) ast.Node {
 	case *ast.Identifier:
 		if n.Index >= cutoff {
 			return &ast.Identifier{
+				Value: n.Value,
 				Index: n.Index + amount,
 			}
 		}
@@ -68,23 +67,25 @@ func betaReduction(body, arg ast.Node) ast.Node {
 func Eval(node ast.Node) ast.Node {
 	for {
 		switch n := node.(type) {
+		case *ast.Abstraction:
+			return &ast.Abstraction{
+				Param: n.Param,
+				Body:  Eval(n.Body),
+			}
 		case *ast.Application:
-			if isValue(n.Lhs) && isValue(n.Rhs) {
-				abs, ok := n.Lhs.(*ast.Abstraction)
-				if !ok {
-					log.Fatalf("expected lhs to be abstraction, got: %s", n.Lhs.Repr())
-				}
+			n.Lhs = Eval(n.Lhs)
 
-				node = betaReduction(abs.Body, n.Rhs)
-			} else if isValue(n.Lhs) {
-				n.Rhs = Eval(n.Rhs)
-			} else {
-				n.Lhs = Eval(n.Lhs)
+			abs, ok := n.Lhs.(*ast.Abstraction)
+			if !ok {
+				return &ast.Application{
+					Lhs: n.Lhs,
+					Rhs: Eval(n.Rhs),
+				}
 			}
+
+			node = betaReduction(abs.Body, n.Rhs)
 		default:
-			if isValue(node) {
-				return node
-			}
+			return node
 		}
 	}
 }
