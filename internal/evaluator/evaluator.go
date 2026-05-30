@@ -4,11 +4,6 @@ import (
 	"github.com/0xmukesh/lambda/internal/ast"
 )
 
-func isValue(node ast.Node) bool {
-	_, ok := node.(*ast.Abstraction)
-	return ok
-}
-
 func shift(node ast.Node, cutoff, amount int) ast.Node {
 	switch n := node.(type) {
 	case *ast.Identifier:

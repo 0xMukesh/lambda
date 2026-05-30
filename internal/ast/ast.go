@@ -24,7 +24,7 @@ type Abstraction struct {
 }
 
 func (ab *Abstraction) Repr() string {
-	return fmt.Sprintf("(\\%s.%s)", ab.Param, ab.Body.Repr())
+	return fmt.Sprintf("\\%s.%s", ab.Param, ab.Body.Repr())
 }
 
 type Application struct {

@@ -33,19 +33,18 @@ func main() {
 		}
 
 		lexer := lexer.NewLexer([]byte(line))
-		toks, err := lexer.LexAll()
+		tokens, err := lexer.LexAll()
 		if err != nil {
 			panic(fmt.Sprintf("failed to lex: %s", err))
 		}
 
-		parser := parser.NewParser(toks)
+		parser := parser.NewParser(tokens)
 		ast, err := parser.Parse()
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse: %s", err))
 		}
 
 		result := evaluator.Eval(ast)
-
 		fmt.Printf("%s\n", result.Repr())
 	}
 }
