@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"log"
+
 	"github.com/0xmukesh/lambda/internal/ast"
 )
 
@@ -65,23 +67,24 @@ func betaReduction(body, arg ast.Node) ast.Node {
 
 func Eval(node ast.Node) ast.Node {
 	for {
-		application, ok := node.(*ast.Application)
-		if !ok {
-			// node can't be reduced any further so early exiting
-			return node
-		}
+		switch n := node.(type) {
+		case *ast.Application:
+			if isValue(n.Lhs) && isValue(n.Rhs) {
+				abs, ok := n.Lhs.(*ast.Abstraction)
+				if !ok {
+					log.Fatalf("expected lhs to be abstraction, got: %s", n.Lhs.Repr())
+				}
 
-		if isValue(application.Lhs) && isValue(application.Rhs) {
-			abs, ok := application.Lhs.(*ast.Abstraction)
-			if !ok {
+				node = betaReduction(abs.Body, n.Rhs)
+			} else if isValue(n.Lhs) {
+				n.Rhs = Eval(n.Rhs)
+			} else {
+				n.Lhs = Eval(n.Lhs)
+			}
+		default:
+			if isValue(node) {
 				return node
 			}
-
-			node = betaReduction(abs.Body, application.Rhs)
-		} else if isValue(application.Lhs) {
-			application.Rhs = Eval(application.Rhs)
-		} else {
-			application.Lhs = Eval(application.Lhs)
 		}
 	}
 }
