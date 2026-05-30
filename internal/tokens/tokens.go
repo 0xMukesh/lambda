@@ -37,6 +37,10 @@ type Token struct {
 	Char byte
 }
 
+func (t *Token) String() string {
+	return fmt.Sprintf("type=%s value=%c", t.Type.String(), t.Char)
+}
+
 func NewToken(tokenType TokenType, char byte) *Token {
 	return &Token{
 		Type: tokenType,

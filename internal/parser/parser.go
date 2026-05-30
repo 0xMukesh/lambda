@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/0xmukesh/lambda/internal/ast"
@@ -8,8 +9,9 @@ import (
 )
 
 type Parser struct {
-	Tokens []*tokens.Token
-	Index  int
+	Tokens  []*tokens.Token
+	Index   int
+	context []string
 }
 
 func NewParser(tokens []*tokens.Token) *Parser {
@@ -62,6 +64,24 @@ func (p *Parser) consume(tt tokens.TokenType) (*tokens.Token, error) {
 	return p.advance(), nil
 }
 
+func (p *Parser) pushVar(name string) {
+	p.context = append(p.context, name)
+}
+
+func (p *Parser) popVar() {
+	p.context = p.context[:len(p.context)-1]
+}
+
+func (p *Parser) resolve(name string) int {
+	for i := len(p.context) - 1; i >= 0; i-- {
+		if p.context[i] == name {
+			return len(p.context) - i - 1
+		}
+	}
+
+	return -1
+}
+
 // term ::= LAMBDA IDENTIFIER DOT term | application
 func (p *Parser) term(node ast.Node) (ast.Node, error) {
 	next := p.peek()
@@ -81,16 +101,20 @@ func (p *Parser) term(node ast.Node) (ast.Node, error) {
 			return nil, err
 		}
 
+		p.pushVar(string(ident.Char)) // before starting to parse the body, push the bound variable
 		term, err := p.term(node)
+		p.popVar() // after parsing the body, pop it
+
 		if err != nil {
 			return nil, err
 		}
+		if term == nil {
+			return nil, errors.New("missing lambda body")
+		}
 
 		return &ast.Abstraction{
-			Param: &ast.Identifier{
-				Value: string(ident.Char),
-			},
-			Body: term,
+			Param: string(ident.Char),
+			Body:  term,
 		}, nil
 	}
 
@@ -145,9 +169,11 @@ func (p *Parser) atom(node ast.Node) (ast.Node, error) {
 		return term, nil
 	case tokens.Identifier:
 		p.advance() // consume identifier
+		idx := p.resolve(string(next.Char))
 
 		return &ast.Identifier{
-			Value: string(next.Char),
+			Value: next.Char,
+			Index: idx,
 		}, nil
 	default:
 		return nil, nil

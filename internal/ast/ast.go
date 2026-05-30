@@ -9,31 +9,29 @@ type Node interface {
 }
 type Ast []Node
 
-// identifiers - x, y, z
 type Identifier struct {
-	Value string
+	Value byte
+	Index int
 }
 
 func (id *Identifier) Repr() string {
-	return id.Value
+	return fmt.Sprintf("%c", id.Value)
 }
 
-// abstraction - \x.x
 type Abstraction struct {
-	Param *Identifier
+	Param string
 	Body  Node
 }
 
 func (ab *Abstraction) Repr() string {
-	return fmt.Sprintf("(abs %s %s)", ab.Param.Repr(), ab.Body.Repr())
+	return fmt.Sprintf("(λ%s.%s)", ab.Param, ab.Body.Repr())
 }
 
-// application - (\x.x) a => a
 type Application struct {
 	Lhs Node
 	Rhs Node
 }
 
 func (ap *Application) Repr() string {
-	return fmt.Sprintf("(app %s %s)", ap.Lhs.Repr(), ap.Rhs.Repr())
+	return fmt.Sprintf("(%s %s)", ap.Lhs.Repr(), ap.Rhs.Repr())
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/0xmukesh/lambda/internal/evaluator"
 	"github.com/0xmukesh/lambda/internal/lexer"
 	"github.com/0xmukesh/lambda/internal/parser"
 	"github.com/chzyer/readline"
@@ -43,6 +44,8 @@ func main() {
 			panic(fmt.Sprintf("failed to parse: %s", err))
 		}
 
-		fmt.Printf("%s\n", ast.Repr())
+		result := evaluator.Eval(ast)
+
+		fmt.Printf("%s\n", result.Repr())
 	}
 }
