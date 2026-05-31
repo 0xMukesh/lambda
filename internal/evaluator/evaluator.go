@@ -1,14 +1,16 @@
 package evaluator
 
 import (
+	"fmt"
+
 	"github.com/0xmukesh/lambda/internal/ast"
 )
 
 func shift(node ast.Node, cutoff, amount int) ast.Node {
 	switch n := node.(type) {
-	case *ast.Identifier:
+	case *ast.Variable:
 		if n.Index >= cutoff {
-			return &ast.Identifier{
+			return &ast.Variable{
 				Value: n.Value,
 				Index: n.Index + amount,
 			}
@@ -32,7 +34,7 @@ func shift(node ast.Node, cutoff, amount int) ast.Node {
 
 func substitute(body ast.Node, target int, arg ast.Node) ast.Node {
 	switch n := body.(type) {
-	case *ast.Identifier:
+	case *ast.Variable:
 		if n.Index == target {
 			return arg
 		}
@@ -57,6 +59,30 @@ func betaReduction(body, arg ast.Node) ast.Node {
 	shifted := shift(arg, 0, 1)
 	substituted := substitute(body, 0, shifted)
 	return shift(substituted, 0, -1)
+}
+
+func Expand(node ast.Node, defs map[string]ast.Node) ast.Node {
+	switch n := node.(type) {
+	case *ast.NamedTermRef:
+		def, ok := defs[n.Name]
+		if !ok {
+			panic(fmt.Sprintf("unknown named term: %s", n.Name))
+		}
+
+		return def
+	case *ast.Abstraction:
+		return &ast.Abstraction{
+			Param: n.Param,
+			Body:  Expand(n.Body, defs),
+		}
+	case *ast.Application:
+		return &ast.Application{
+			Lhs: Expand(n.Lhs, defs),
+			Rhs: Expand(n.Rhs, defs),
+		}
+	}
+
+	return node
 }
 
 func Eval(node ast.Node) ast.Node {

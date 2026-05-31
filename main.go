@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/0xmukesh/lambda/internal/ast"
 	"github.com/0xmukesh/lambda/internal/evaluator"
 	"github.com/0xmukesh/lambda/internal/lexer"
 	"github.com/0xmukesh/lambda/internal/parser"
@@ -16,6 +17,8 @@ func main() {
 		panic(fmt.Sprintf("failed to setup readline: %s", err))
 	}
 	defer rl.Close()
+
+	defs := make(map[string]ast.Node)
 
 	for {
 		line, err := rl.Readline()
@@ -39,12 +42,18 @@ func main() {
 		}
 
 		parser := parser.NewParser(tokens)
-		ast, err := parser.Parse()
+		node, err := parser.Parse()
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse: %s", err))
 		}
 
-		result := evaluator.Eval(ast)
-		fmt.Printf("%s\n", result.Repr())
+		switch n := node.(type) {
+		case *ast.Assignment:
+			defs[n.Name] = n.Body
+		default:
+			expanded := evaluator.Expand(node, defs)
+			result := evaluator.Eval(expanded)
+			fmt.Println(result.Repr())
+		}
 	}
 }

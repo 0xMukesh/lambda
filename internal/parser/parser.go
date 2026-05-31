@@ -90,9 +90,9 @@ func (p *Parser) term(node ast.Node) (ast.Node, error) {
 	}
 
 	if next.Type == tokens.Lambda {
-		p.advance() // consuming lambda token
+		p.advance()
 
-		ident, err := p.consume(tokens.Identifier)
+		varName, err := p.consume(tokens.Variable)
 		if err != nil {
 			return nil, err
 		}
@@ -101,9 +101,9 @@ func (p *Parser) term(node ast.Node) (ast.Node, error) {
 			return nil, err
 		}
 
-		p.pushVar(string(ident.Char)) // before starting to parse the body, push the bound variable
+		p.pushVar(string(varName.Char))
 		term, err := p.term(node)
-		p.popVar() // after parsing the body, pop it
+		p.popVar()
 
 		if err != nil {
 			return nil, err
@@ -113,7 +113,7 @@ func (p *Parser) term(node ast.Node) (ast.Node, error) {
 		}
 
 		return &ast.Abstraction{
-			Param: string(ident.Char),
+			Param: string(varName.Char),
 			Body:  term,
 		}, nil
 	}
@@ -155,8 +155,7 @@ func (p *Parser) atom(node ast.Node) (ast.Node, error) {
 
 	switch next.Type {
 	case tokens.LeftParen:
-		p.advance() // consume left paren
-
+		p.advance()
 		term, err := p.term(node)
 		if err != nil {
 			return nil, err
@@ -167,13 +166,18 @@ func (p *Parser) atom(node ast.Node) (ast.Node, error) {
 		}
 
 		return term, nil
-	case tokens.Identifier:
-		p.advance() // consume identifier
+	case tokens.Variable:
+		p.advance()
 		idx := p.resolve(string(next.Char))
 
-		return &ast.Identifier{
+		return &ast.Variable{
 			Value: next.Char,
 			Index: idx,
+		}, nil
+	case tokens.NamedTerm:
+		p.advance()
+		return &ast.NamedTermRef{
+			Name: next.Value,
 		}, nil
 	default:
 		return nil, nil
@@ -185,11 +189,24 @@ func (p *Parser) Parse() (ast.Node, error) {
 		return nil, nil
 	}
 
-	var node ast.Node
-	result, err := p.term(node)
-	if err != nil {
-		return nil, err
+	if len(p.Tokens) > 2 && p.Tokens[0].Type == tokens.NamedTerm && p.Tokens[1].Type == tokens.Assign {
+		name := p.Tokens[0].Value
+		p.advance()
+		p.advance()
+
+		body, err := p.term(nil)
+		if err != nil {
+			return nil, err
+		}
+		if body == nil {
+			return nil, errors.New("missing rhs side for assignment")
+		}
+
+		return &ast.Assignment{
+			Name: name,
+			Body: body,
+		}, nil
 	}
 
-	return result, nil
+	return p.term(nil)
 }

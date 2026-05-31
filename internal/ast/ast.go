@@ -9,12 +9,12 @@ type Node interface {
 }
 type Ast []Node
 
-type Identifier struct {
+type Variable struct {
 	Value byte
 	Index int
 }
 
-func (id *Identifier) Repr() string {
+func (id *Variable) Repr() string {
 	return fmt.Sprintf("%c", id.Value)
 }
 
@@ -34,4 +34,21 @@ type Application struct {
 
 func (ap *Application) Repr() string {
 	return fmt.Sprintf("(%s %s)", ap.Lhs.Repr(), ap.Rhs.Repr())
+}
+
+type Assignment struct {
+	Name string
+	Body Node
+}
+
+func (as *Assignment) Repr() string {
+	return fmt.Sprintf("%s = %s", as.Name, as.Body.Repr())
+}
+
+type NamedTermRef struct {
+	Name string
+}
+
+func (nt *NamedTermRef) Repr() string {
+	return nt.Name
 }

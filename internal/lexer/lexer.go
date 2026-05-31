@@ -5,6 +5,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/0xmukesh/lambda/internal/tokens"
+	"github.com/0xmukesh/lambda/internal/utils"
 )
 
 type Lexer struct {
@@ -35,7 +36,7 @@ func (l *Lexer) Lex() (*tokens.Token, error) {
 		return nil, fmt.Errorf("got non-utf8 character: %c", l.Char)
 	}
 
-	if l.Char == '\n' || l.Char == ' ' || l.Char == '\t' || l.Char == 0 {
+	if utils.IsWhitespace(l.Char) {
 		return tok, nil
 	}
 
@@ -48,8 +49,26 @@ func (l *Lexer) Lex() (*tokens.Token, error) {
 		tok = tokens.NewToken(tokens.LeftParen, l.Char)
 	case ')':
 		tok = tokens.NewToken(tokens.RightParen, l.Char)
+	case '=':
+		tok = tokens.NewToken(tokens.Assign, l.Char)
 	default:
-		tok = tokens.NewToken(tokens.Identifier, l.Char)
+		if utils.IsLetter(l.Char) {
+			name := []byte{l.Char}
+
+			for l.Index < len(l.Source) && utils.IsLetter(l.Source[l.Index]) {
+				name = append(name, l.Source[l.Index])
+				l.Index++
+			}
+
+			if len(name) > 1 {
+				tok = &tokens.Token{
+					Type:  tokens.NamedTerm,
+					Value: string(name),
+				}
+			} else {
+				tok = tokens.NewToken(tokens.Variable, l.Char)
+			}
+		}
 	}
 
 	return tok, nil
