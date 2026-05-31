@@ -1,0 +1,18 @@
+true  = \a.\b.a
+false = \a.\b.b
+zero  = \f.\x.x
+succ  = \n.\f.\x.f (n f x)
+
+nil       = \c.\n.n
+cons      = \h.\t.\c.\n.c h (t c n)
+is_empty  = \l.l (\h.\t.false) true
+append    = \a.\b.\c.\n.a c (b c n)
+
+reverse   = \l.l (\h.\t.append t (cons h nil)) nil
+
+one   = succ zero
+two   = succ one
+three = succ two
+
+list = cons one (cons two (cons three nil))
+reverse list

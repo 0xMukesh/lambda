@@ -93,8 +93,7 @@ func runPipeline(source []byte, defs map[string]ast.Node) {
 	case *ast.Assignment:
 		defs[n.Name] = n.Body
 	default:
-		expanded := evaluator.Expand(node, defs)
-		result := evaluator.Eval(expanded, defs)
+		result := evaluator.Normalize(node, defs)
 		if result != nil {
 			fmt.Println(result.Repr())
 		}
