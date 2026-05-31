@@ -45,6 +45,10 @@ type Token struct {
 }
 
 func (t *Token) String() string {
+	if t.Value != "" {
+		return fmt.Sprintf("type=%s value=%s", t.Type.String(), t.Value)
+	}
+
 	return fmt.Sprintf("type=%s value=%c", t.Type.String(), t.Char)
 }
 

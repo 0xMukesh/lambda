@@ -69,7 +69,7 @@ func Expand(node ast.Node, defs map[string]ast.Node) ast.Node {
 			panic(fmt.Sprintf("unknown named term: %s", n.Name))
 		}
 
-		return def
+		return Expand(def, defs)
 	case *ast.Abstraction:
 		return &ast.Abstraction{
 			Param: n.Param,
@@ -85,22 +85,23 @@ func Expand(node ast.Node, defs map[string]ast.Node) ast.Node {
 	return node
 }
 
-func Eval(node ast.Node) ast.Node {
+func Eval(node ast.Node, defs map[string]ast.Node) ast.Node {
 	for {
 		switch n := node.(type) {
+		case *ast.NamedTermRef:
+			node = defs[n.Name]
 		case *ast.Abstraction:
 			return &ast.Abstraction{
 				Param: n.Param,
-				Body:  Eval(n.Body),
+				Body:  Eval(n.Body, defs),
 			}
 		case *ast.Application:
-			n.Lhs = Eval(n.Lhs)
-
+			n.Lhs = Eval(n.Lhs, defs)
 			abs, ok := n.Lhs.(*ast.Abstraction)
 			if !ok {
 				return &ast.Application{
 					Lhs: n.Lhs,
-					Rhs: Eval(n.Rhs),
+					Rhs: Eval(n.Rhs, defs),
 				}
 			}
 
